@@ -1,8 +1,10 @@
 <?php
 
+use App\Entitys\EntityWithOtherDependency;
 use App\Entitys\SimpleEntity;
 use App\Entitys\TestEntity;
 use App\Enum\ActiveStatusEnum;
+use App\UseCase\Calculate;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Hydrator\Hydrator;
 
@@ -41,5 +43,31 @@ class HydrateTest extends TestCase
         $this->assertSame($id, $object->getId()->getValue());
         $this->assertSame($text, $object->getName()->getValue());
         $this->assertSame($status, $object->getStatus()->name);
+    }
+
+    public function testHydrateVoEntityWithOtherDependency(): void
+    {
+        $id = 1;
+        $text = 'string';
+        $status = 'Cancelled';
+        $hydrator = new Hydrator();
+        $object = $hydrator->create(EntityWithOtherDependency::class, [
+            'useCase' => [
+                'value' => Calculate::class
+            ],
+            'id' => [
+                'value' => $id
+            ],
+            'name' => [
+                'value' => $text
+            ],
+            'status' => ActiveStatusEnum::Cancelled //для енам работает вот так
+        ]);
+
+        $this->assertSame($id, $object->getId()->getValue());
+        $this->assertSame($text, $object->getName()->getValue());
+        $this->assertSame($status, $object->getStatus()->name);
+
+        $this->assertIsInt($object->calc());
     }
 }
