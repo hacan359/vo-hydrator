@@ -6,13 +6,16 @@ use App\Entitys\NotNullEntity;
 use App\Entitys\SimpleEntity;
 use App\Entitys\TestEntity;
 use App\Enum\ActiveStatusEnum;
+use App\Factory\DefaultObjectFactory;
 use App\UseCase\Calculate;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Hydrator\Hydrator;
+use Yiisoft\Hydrator\ObjectFactory\ContainerObjectFactory;
 use Yiisoft\Hydrator\TypeCaster\CompositeTypeCaster;
 use Yiisoft\Hydrator\TypeCaster\EnumTypeCaster;
 use Yiisoft\Hydrator\TypeCaster\HydratorTypeCaster;
 use Yiisoft\Hydrator\TypeCaster\PhpNativeTypeCaster;
+use Yiisoft\Injector\Injector;
 
 class HydrateTest extends TestCase
 {
@@ -88,6 +91,10 @@ class HydrateTest extends TestCase
                 new EnumTypeCaster(),
                 new PhpNativeTypeCaster(),
                 new HydratorTypeCaster(),
+            ),
+            null,
+            new DefaultObjectFactory(
+                new ContainerObjectFactory(new Injector())
             )
         );
 
@@ -102,6 +109,8 @@ class HydrateTest extends TestCase
 
         $this->assertSame($id, $object->getId()->getValue());
         $this->assertSame($text, $object->getName()->getValue());
-        $this->assertSame(ActiveStatusEnum::Cancelled, $object->getStatus());
+        $this->assertSame($status, $object->getStatus()->value);
+        $this->assertTrue($object->getNoName()->isNull());
+        $this->assertTrue($object->getNoStatus()->isUndefined());
     }
 }
