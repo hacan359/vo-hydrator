@@ -1,12 +1,18 @@
 <?php
 
+use App\Caster\ValueObjectCaster;
 use App\Entitys\EntityWithOtherDependency;
+use App\Entitys\NotNullEntity;
 use App\Entitys\SimpleEntity;
 use App\Entitys\TestEntity;
 use App\Enum\ActiveStatusEnum;
 use App\UseCase\Calculate;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Hydrator\Hydrator;
+use Yiisoft\Hydrator\TypeCaster\CompositeTypeCaster;
+use Yiisoft\Hydrator\TypeCaster\EnumTypeCaster;
+use Yiisoft\Hydrator\TypeCaster\HydratorTypeCaster;
+use Yiisoft\Hydrator\TypeCaster\PhpNativeTypeCaster;
 
 class HydrateTest extends TestCase
 {
@@ -69,5 +75,33 @@ class HydrateTest extends TestCase
         $this->assertSame($status, $object->getStatus()->name);
 
         $this->assertIsInt($object->calc());
+    }
+
+    public function testHydrateNotNullable(): void
+    {
+        $id = 1;
+        $text = 'string';
+        $status = ActiveStatusEnum::Cancelled->value;
+        $hydrator = new Hydrator(
+            new CompositeTypeCaster(
+                new ValueObjectCaster(),
+                new EnumTypeCaster(),
+                new PhpNativeTypeCaster(),
+                new HydratorTypeCaster(),
+            )
+        );
+
+        $object = $hydrator->create(
+            NotNullEntity::class,
+            [
+                'id' => $id,
+                'name' => $text,
+                'status' => $status,
+            ]
+        );
+
+        $this->assertSame($id, $object->getId()->getValue());
+        $this->assertSame($text, $object->getName()->getValue());
+        $this->assertSame(ActiveStatusEnum::Cancelled, $object->getStatus());
     }
 }
