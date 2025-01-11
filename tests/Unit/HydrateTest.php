@@ -83,32 +83,34 @@ class HydrateTest extends TestCase
     public function testHydrateNotNullable(): void
     {
         $id = 1;
-        $text = 'string';
+        $name = 'string';
         $status = ActiveStatusEnum::Cancelled->value;
+
         $hydrator = new Hydrator(
-            new CompositeTypeCaster(
+            typeCaster: new CompositeTypeCaster(
                 new ValueObjectCaster(),
                 new EnumTypeCaster(),
                 new PhpNativeTypeCaster(),
                 new HydratorTypeCaster(),
             ),
-            null,
-            new DefaultObjectFactory(
-                new ContainerObjectFactory(new Injector())
+            objectFactory: new DefaultObjectFactory(
+                containerObjectFactory: new ContainerObjectFactory(
+                    injector: new Injector()
+                )
             )
         );
 
         $object = $hydrator->create(
-            NotNullEntity::class,
-            [
-                'id' => $id,
-                'name' => $text,
-                'status' => $status,
-            ]
+            class: NotNullEntity::class,
+            data: compact(
+                'id',
+                'name',
+                'status',
+            )
         );
 
         $this->assertSame($id, $object->getId()->getValue());
-        $this->assertSame($text, $object->getName()->getValue());
+        $this->assertSame($name, $object->getName()->getValue());
         $this->assertSame($status, $object->getStatus()->value);
         $this->assertTrue($object->getNoName()->isNull());
         $this->assertTrue($object->getNoStatus()->isUndefined());
