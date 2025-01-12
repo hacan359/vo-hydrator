@@ -1,12 +1,21 @@
 <?php
 
+use App\Caster\ValueObjectCaster;
 use App\Entitys\EntityWithOtherDependency;
+use App\Entitys\NotNullEntity;
 use App\Entitys\SimpleEntity;
 use App\Entitys\TestEntity;
 use App\Enum\ActiveStatusEnum;
+use App\Factory\DefaultObjectFactory;
 use App\UseCase\Calculate;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Hydrator\Hydrator;
+use Yiisoft\Hydrator\ObjectFactory\ContainerObjectFactory;
+use Yiisoft\Hydrator\TypeCaster\CompositeTypeCaster;
+use Yiisoft\Hydrator\TypeCaster\EnumTypeCaster;
+use Yiisoft\Hydrator\TypeCaster\HydratorTypeCaster;
+use Yiisoft\Hydrator\TypeCaster\PhpNativeTypeCaster;
+use Yiisoft\Injector\Injector;
 
 class HydrateTest extends TestCase
 {
@@ -69,5 +78,41 @@ class HydrateTest extends TestCase
         $this->assertSame($status, $object->getStatus()->name);
 
         $this->assertIsInt($object->calc());
+    }
+
+    public function testHydrateNotNullable(): void
+    {
+        $id = 1;
+        $name = 'string';
+        $status = ActiveStatusEnum::Cancelled->value;
+
+        $hydrator = new Hydrator(
+            typeCaster: new CompositeTypeCaster(
+                new ValueObjectCaster(),
+                new EnumTypeCaster(),
+                new PhpNativeTypeCaster(),
+                new HydratorTypeCaster(),
+            ),
+            objectFactory: new DefaultObjectFactory(
+                containerObjectFactory: new ContainerObjectFactory(
+                    injector: new Injector()
+                )
+            )
+        );
+
+        $object = $hydrator->create(
+            class: NotNullEntity::class,
+            data: compact(
+                'id',
+                'name',
+                'status',
+            )
+        );
+
+        $this->assertSame($id, $object->getId()->getValue());
+        $this->assertSame($name, $object->getName()->getValue());
+        $this->assertSame($status, $object->getStatus()->value);
+        $this->assertTrue($object->getNoName()->isNull());
+        $this->assertTrue($object->getNoStatus()->isUndefined());
     }
 }
